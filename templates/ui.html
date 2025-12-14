@@ -7,12 +7,10 @@
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
 
-    /* ENHANCED GRADIENT BACKGROUND WITH ANIMATION */
+    /* STATIC LIGHT SKY BLUE BACKGROUND */
     body {
       font-family:'Inter','Segoe UI','Helvetica Neue',sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #667eea 100%);
-      background-size: 400% 400%;
-      animation: gradientShift 15s ease infinite;
+      background: #87CEEB;
       min-height:100vh;
       display:flex;
       justify-content:center;
@@ -20,33 +18,6 @@
       padding:20px;
       position:relative;
       overflow-x:hidden;
-    }
-    
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    /* ANIMATED FLOATING PARTICLES */
-    body::before {
-      content:'';
-      position:absolute;
-      top:-50%;left:-50%;
-      width:200%;height:200%;
-      background-image: 
-        radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 1px, transparent 1px),
-        radial-gradient(circle at 60% 80%, rgba(255,255,255,0.08) 1px, transparent 1px),
-        radial-gradient(circle at 80% 20%, rgba(255,255,255,0.12) 1px, transparent 1px);
-      background-size: 80px 80px, 120px 120px, 60px 60px;
-      animation: floatParticles 25s linear infinite;
-      pointer-events:none;
-      opacity: 0.6;
-    }
-    
-    @keyframes floatParticles {
-      0% { transform: translate(0, 0) rotate(0deg); }
-      100% { transform: translate(100px, 100px) rotate(360deg); }
     }
 
     /* GLASSMORPHISM CONTAINER */
@@ -551,22 +522,29 @@
     }
     .move-history h4 {
       color: #2c3e50;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       font-size: 15px;
       font-weight: 800;
       position: sticky;
       top: 0;
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(10px);
-      padding: 8px 0;
+      padding: 10px 8px;
       border-bottom: 2px solid rgba(102, 126, 234, 0.3);
       border-radius: 8px 8px 0 0;
+      z-index: 10;
+      margin-left: -14px;
+      margin-right: -14px;
+      margin-top: -14px;
+      padding-left: 14px;
+      padding-right: 14px;
     }
     .move-list {
       display: grid;
       grid-template-columns: auto 1fr 1fr;
       gap: 10px;
       font-size: 14px;
+      margin-top: 10px;
     }
     .move-number {
       color: #666;
@@ -930,7 +908,7 @@
       }
 
       #blackTimer {
-        top: -32px !important;
+        top: -28px !important;
         left: 50% !important;
         transform: translateX(-50%);
         font-size: 13px !important;
@@ -938,7 +916,7 @@
       }
 
       #whiteTimer {
-        bottom: -32px !important;
+        bottom: -28px !important;
         left: 50% !important;
         transform: translateX(-50%);
         font-size: 13px !important;
@@ -971,11 +949,19 @@
 
       .move-history h4 {
         font-size: 13px;
+        margin-bottom: 10px;
+        padding: 8px 6px;
+        margin-left: -10px;
+        margin-right: -10px;
+        margin-top: -10px;
+        padding-left: 10px;
+        padding-right: 10px;
       }
 
       .move-list {
         font-size: 12px;
         gap: 6px;
+        margin-top: 8px;
       }
 
       .move-item {
@@ -1285,12 +1271,12 @@
         <div class="board-section">
           
           <!-- BLACK TIMER TOP -->
-          <div id="blackTimer" class="timer black" style="left:0px; top:-38px;">
+          <div id="blackTimer" class="timer black" style="left:0px; top:-34px;">
             5:00
           </div>
 
           <!-- WHITE TIMER BOTTOM -->
-          <div id="whiteTimer" class="timer white" style="left:0px; bottom:-38px;">
+          <div id="whiteTimer" class="timer white" style="left:0px; bottom:-34px;">
             5:00
           </div>
 
@@ -1619,7 +1605,11 @@ function handleTypingInput(){
   if(!currentRoom || !playerColor) return;
   if(!isTyping){
     isTyping = true;
-    socket.emit("typing", { room: currentRoom, sender: playerColor });
+    socket.emit("typing", { 
+      room: currentRoom, 
+      sender: playerColor,
+      senderName: playerName 
+    });
   }
   if(typingTimeout) clearTimeout(typingTimeout);
   typingTimeout = setTimeout(() => { stopTypingNow(); }, 1400);
@@ -1629,7 +1619,11 @@ function stopTypingNow(){
   if(!isTyping) return;
   isTyping = false;
   if (currentRoom && playerColor) {
-    socket.emit("stop_typing", { room: currentRoom, sender: playerColor });
+    socket.emit("stop_typing", { 
+      room: currentRoom, 
+      sender: playerColor,
+      senderName: playerName 
+    });
   }
 }
 
@@ -1933,7 +1927,8 @@ socket.on("user_typing", data=>{
   if(data.sender===playerColor) return;
   const dest=document.getElementById("typingIndicator");
   if (dest) {
-    const name = (data.sender==="white") ? "♔ White" : "♚ Black";
+    // Use player name if available, otherwise fall back to color
+    const name = data.senderName || (data.sender==="white" ? "♔ White" : "♚ Black");
     dest.innerText = `${name} is typing...`;
   }
 });
