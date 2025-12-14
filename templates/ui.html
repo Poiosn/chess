@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Multiplayer Chess — Full</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
 
@@ -16,7 +16,7 @@
       align-items:center;
       padding:20px;
       position:relative;
-      overflow:hidden;
+      overflow-x:hidden;
     }
     body::before{
       content:'';
@@ -45,7 +45,7 @@
       max-height:92vh;
       position:relative;
       z-index:1;
-      overflow:hidden;
+      overflow-y:auto;
     }
     h1{
       text-align:center;
@@ -116,7 +116,7 @@
 
     .timer{
       padding:6px 12px;border-radius:8px;text-align:center;
-      font-size:14px;font-weight:700;transition:all .3s;position:relative;
+      font-size:14px;font-weight:700;transition:all .3s;position:absolute;
     }
     .timer.white{background:#fff;border:2px solid #ddd;color:#333;}
     .timer.black{background:#000;color:#fff;border:2px solid #222;}
@@ -130,14 +130,27 @@
       50%{opacity:0.5;}
     }
 
-    .board-section { position:relative; width:680px; margin: 0 auto; display:flex; flex-direction:column; align-items:center; }
+    .board-section {
+      position: relative;
+      width: 100%;
+      max-width: 680px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
 
     .chessboard{
-      display:grid;grid-template-columns:repeat(8,1fr);
-      width:680px;height:680px;
-      border:4px solid #2c3e50;border-radius:8px;overflow:hidden;
-      box-shadow:0 10px 40px rgba(0,0,0,0.3);
-      position:relative;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      width: min(92vw, 680px);
+      aspect-ratio: 1 / 1;
+      height: auto;
+      border: 4px solid #2c3e50;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      position: relative;
     }
 
     .coordinates{
@@ -466,10 +479,393 @@
       }
     }
 
-    @media (max-width: 900px){
-      .chessboard{ width: 420px; height:420px; }
-      .board-section{ width:420px; }
-      .move-history{ height:420px; }
+    /* ========================================
+       MOBILE RESPONSIVE STYLES
+       ======================================== */
+    @media (max-width: 900px) {
+      body {
+        padding: 8px;
+        align-items: flex-start;
+      }
+
+      .container {
+        padding: 12px;
+        max-height: none;
+        width: 100%;
+        border-radius: 16px;
+      }
+
+      h1 {
+        font-size: 22px;
+        margin-bottom: 6px;
+      }
+
+      .subtitle {
+        font-size: 11px;
+        margin-bottom: 8px;
+      }
+
+      /* Stack everything vertically */
+      .game-layout {
+        flex-direction: column !important;
+        gap: 12px !important;
+      }
+
+      /* Sidebar full width */
+      .sidebar {
+        width: 100% !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+      }
+
+      /* Board section optimizations */
+      .board-section {
+        width: 100%;
+        max-width: 100%;
+        position: relative;
+      }
+
+      .chessboard {
+        width: 100%;
+        max-width: 100%;
+        border: 3px solid #2c3e50;
+      }
+
+      /* Timer positioning for mobile */
+      #blackTimer {
+        top: -30px !important;
+        left: 50% !important;
+        transform: translateX(-50%);
+        font-size: 12px !important;
+        padding: 4px 10px !important;
+      }
+
+      #whiteTimer {
+        bottom: -30px !important;
+        left: 50% !important;
+        transform: translateX(-50%);
+        font-size: 12px !important;
+        padding: 4px 10px !important;
+      }
+
+      /* Coordinates spacing */
+      .coord-file {
+        bottom: -20px !important;
+        font-size: 9px !important;
+      }
+
+      .coord-rank {
+        left: -22px !important;
+        font-size: 9px !important;
+      }
+
+      .coord-file.flipped {
+        top: -20px !important;
+      }
+
+      .coord-rank.flipped {
+        right: -20px !important;
+      }
+
+      /* Compact move history */
+      .move-history {
+        height: auto !important;
+        max-height: 220px !important;
+        padding: 8px;
+      }
+
+      .move-history h4 {
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+
+      .move-list {
+        font-size: 11px;
+        gap: 5px;
+      }
+
+      .move-item {
+        padding: 3px 6px;
+      }
+
+      /* Compact chat */
+      .chat-box {
+        padding: 8px;
+      }
+
+      .chat-box h4 {
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+
+      .chat-messages {
+        height: 180px !important;
+        max-height: 180px !important;
+        padding: 4px;
+      }
+
+      .chat-line {
+        font-size: 12px;
+        padding: 5px 8px;
+        margin-bottom: 4px !important;
+      }
+
+      .typing-indicator {
+        font-size: 11px;
+      }
+
+      /* Button group improvements */
+      .button-group {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .button-group button {
+        width: 100%;
+        padding: 10px 8px;
+        font-size: 12px;
+        border-radius: 10px;
+      }
+
+      /* Room controls */
+      .room-controls {
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .room-controls input {
+        max-width: 100%;
+        width: 100%;
+        padding: 10px 14px;
+        font-size: 14px;
+      }
+
+      .room-controls button {
+        width: 100%;
+        padding: 10px;
+        font-size: 13px;
+      }
+
+      /* Time control section */
+      .time-control-section {
+        padding: 10px;
+        margin-bottom: 10px;
+      }
+
+      .time-control-section h4 {
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+
+      .time-options {
+        gap: 6px;
+      }
+
+      .time-btn {
+        padding: 6px 10px;
+        font-size: 11px;
+      }
+
+      /* Bot controls */
+      .bot-controls {
+        margin-bottom: 10px;
+      }
+
+      .bot-controls button {
+        width: 100%;
+        padding: 10px;
+        font-size: 13px;
+      }
+
+      /* Status messages */
+      .status {
+        font-size: 13px;
+        padding: 6px;
+        margin-top: 8px;
+      }
+
+      .turn-indicator {
+        font-size: 12px;
+        padding: 3px;
+        margin-bottom: 3px;
+      }
+
+      /* Game info */
+      .game-info {
+        padding: 8px;
+        margin-bottom: 8px;
+      }
+
+      .game-info h3 {
+        font-size: 14px;
+      }
+
+      .game-info p {
+        font-size: 12px;
+      }
+
+      .player-badge {
+        font-size: 11px;
+        padding: 3px 8px;
+      }
+
+      /* Connection status */
+      .connection-status {
+        font-size: 11px;
+        padding: 6px;
+        margin-bottom: 8px;
+      }
+
+      /* Modals */
+      .promotion-content,
+      .draw-content,
+      .name-content {
+        min-width: 85%;
+        max-width: 85%;
+        padding: 16px 12px;
+      }
+
+      .promotion-content h3,
+      .draw-content h3,
+      .name-content h3 {
+        font-size: 16px;
+      }
+
+      .promotion-pieces img {
+        width: 55px;
+        height: 55px;
+        margin: 5px;
+      }
+
+      /* Emoji panel positioning */
+      .emoji-panel {
+        bottom: 42px;
+        width: 180px;
+        padding: 6px;
+        gap: 4px;
+      }
+
+      .emoji-btn {
+        font-size: 16px;
+        padding: 4px;
+      }
+
+      /* Chat input */
+      .chat-input {
+        gap: 6px;
+      }
+
+      .chat-input input {
+        font-size: 13px;
+        padding: 8px;
+      }
+
+      .chat-input button {
+        padding: 8px 10px;
+        font-size: 12px;
+      }
+
+      /* Sound toggle */
+      .sound-toggle {
+        top: 10px;
+        left: 10px;
+        width: 34px;
+        height: 34px;
+        font-size: 18px;
+      }
+
+      /* Messages */
+      #messages {
+        font-size: 12px;
+        margin-top: 6px;
+      }
+    }
+
+    /* Extra small devices (phones < 400px) */
+    @media (max-width: 400px) {
+      body {
+        padding: 5px;
+      }
+
+      .container {
+        padding: 10px;
+        border-radius: 12px;
+      }
+
+      h1 {
+        font-size: 18px;
+      }
+
+      .subtitle {
+        font-size: 10px;
+      }
+
+      .chessboard {
+        border: 2px solid #2c3e50;
+      }
+
+      .button-group {
+        gap: 6px;
+      }
+
+      .button-group button {
+        padding: 8px 6px;
+        font-size: 11px;
+      }
+
+      .time-btn {
+        padding: 5px 8px;
+        font-size: 10px;
+      }
+
+      .room-controls input,
+      .room-controls button {
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+
+      .game-info h3 {
+        font-size: 13px;
+      }
+
+      .move-history,
+      .chat-messages {
+        max-height: 180px !important;
+      }
+
+      #blackTimer,
+      #whiteTimer {
+        font-size: 11px !important;
+        padding: 3px 8px !important;
+      }
+
+      .promotion-pieces img {
+        width: 50px;
+        height: 50px;
+        margin: 4px;
+      }
+    }
+
+    /* Landscape mobile optimization */
+    @media (max-width: 900px) and (orientation: landscape) {
+      body {
+        align-items: flex-start;
+      }
+
+      .container {
+        max-height: none;
+      }
+
+      .chessboard {
+        width: min(50vh, 90vw);
+      }
+
+      .move-history,
+      .chat-messages {
+        max-height: 35vh !important;
+      }
     }
   </style>
 
@@ -529,13 +925,13 @@
           
           <!-- BLACK TIMER TOP (FIXED ID) -->
           <div id="blackTimer" class="timer black"
-               style="position:absolute; left:0px; top:-35px;">
+               style="left:0px; top:-35px;">
             5:00
           </div>
 
           <!-- WHITE TIMER BOTTOM (FIXED ID) -->
           <div id="whiteTimer" class="timer white"
-               style="position:absolute; left:0px; bottom:-35px;">
+               style="left:0px; bottom:-35px;">
             5:00
           </div>
 
@@ -550,7 +946,8 @@
           <div class="status" id="status"></div>
           <div class="messages" id="messages"></div>
         </div>
-        <div class="sidebar" style="width:620px; display:flex; gap:20px;">
+        <div class="sidebar" style="display:flex; gap:20px;">
+
 
           <div class="move-history" style="flex:1;">
             <h4>📜 Move History</h4>
@@ -591,7 +988,7 @@
         </div>
       </div>
 
-      <div class="button-group" style="margin-top:14px">
+      <div class="button-group">
         <button onclick="goHome()">🏠 Home</button>
         <button onclick="offerDraw()" class="btn-draw">🤝 Offer Draw</button>
         <button onclick="resetGame()">🔄 New Game</button>
@@ -775,7 +1172,7 @@ function sendChat(){
     room: currentRoom,
     sender: playerColor || "spectator",
     message: text,
-    senderName: playerName  // Send player name with message
+    senderName: playerName
   });
 
   input.value = "";
@@ -790,17 +1187,14 @@ function appendChat(data, isLocal){
   const div = document.createElement("div");
   div.className = "chat-line " + (isLocal ? "you" : "opponent");
 
-  // IMPORTANT: Always use senderName from server (sent by Flask)
   let displayName = data.senderName;
   
-  // Fallback only if senderName is missing
   if (!displayName) {
     if (data.sender === "white") displayName = "♔ White";
     else if (data.sender === "black") displayName = "♚ Black";
     else displayName = "User";
   }
 
-  // Add emoji prefix based on sender color
   const prefix = data.sender === "white" ? "♔" : 
                  data.sender === "black" ? "♚" : "💬";
 
@@ -821,8 +1215,6 @@ function appendChat(data, isLocal){
   box.appendChild(div);
   box.scrollTop = box.scrollHeight;
 }
-
-
 
 /* typing indicator */
 let typingTimeout = null;
@@ -1157,16 +1549,12 @@ socket.on("user_stop_typing", data=>{
 });
 
 socket.on("chat_message", data => {
-  // Ensure senderName is properly set
-  console.log("Chat received:", data);  // Debug: Check what we get
-  
   appendChat(data, data.sender === playerColor);
   
   if (data.sender !== playerColor) {
     playSound("notify");
   }
 });
-
 
 socket.on("possible_moves", d=>{
   possibleMoves = d.moves;
