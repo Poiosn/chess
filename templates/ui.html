@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Multiplayer Chess — Full</title>
+  <title>Multiplayer Chess — Optimized</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -192,8 +192,13 @@
     .square.last-move{background:#cdd26a !important;}
     .square:hover{filter:brightness(1.1);}
 
+    /* OPTIMISTIC MOVE ANIMATION */
     .piece{
       width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+      transition: opacity 0.15s ease;
+    }
+    .piece.moving{
+      opacity:0.6;
     }
     .piece:hover{transform:scale(1.05);}
     .piece img{width:85%;height:85%;object-fit:contain;pointer-events:none;}
@@ -1040,10 +1045,16 @@
 </div>
 
 <script>
-/* -------------------------
-   MAIN CLIENT VARIABLES
-   ------------------------- */
-const socket = io({ transports: ["websocket", "polling"] });
+/* ========================================================================
+   OPTIMIZED CHESS CLIENT WITH INSTANT UI UPDATES
+   ======================================================================== */
+
+const socket = io({ 
+  transports: ["websocket", "polling"],
+  reconnection: true,
+  reconnectionDelay: 500,
+  reconnectionAttempts: 10
+});
 
 let currentRoom = null;
 let playerColor = null;
@@ -1063,14 +1074,19 @@ let timerInterval = null;
 let playerName = null;
 let pendingRoomAction = null;
 
-/* Convert mm:ss → seconds */
+/* OPTIMISTIC UPDATE TRACKING */
+let pendingMoves = new Map(); // Track moves awaiting server confirmation
+let moveSequence = 0; // Unique ID for each move
+
+/* -------------------------
+   HELPER FUNCTIONS
+   ------------------------- */
 function timeStringToSeconds(str) {
   if (!str || typeof str !== "string" || !str.includes(":")) return 0;
   const [m, s] = str.split(":").map(Number);
   return m * 60 + s;
 }
 
-/* Format seconds → mm:ss */
 function formatSeconds(sec) {
   sec = Math.max(0, Math.floor(sec));
   const m = Math.floor(sec / 60);
@@ -1078,7 +1094,6 @@ function formatSeconds(sec) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-/* Update timer text */
 function updateDisplayedTimers() {
   const whiteTimer = document.getElementById("whiteTimer");
   const blackTimer = document.getElementById("blackTimer");
@@ -1100,7 +1115,6 @@ function updateDisplayedTimers() {
   }
 }
 
-/* Start local countdown */
 function startLocalTimer() {
   if (timerInterval) clearInterval(timerInterval);
 
@@ -1160,6 +1174,52 @@ function toggleSound(){
     btn.classList.toggle("muted", !soundEnabled);
   }
 }
+
+/* -------------------------
+   OPTIMISTIC UPDATE SYSTEM
+   ------------------------- */
+
+// Apply move immediately to local state
+function applyOptimisticMove(from, to, promotion = null) {
+  if (!gameState) return null;
+  
+  // Create a deep copy of the game state
+  const optimisticState = JSON.parse(JSON.stringify(gameState));
+  
+  // Get the piece being moved
+  const piece = optimisticState.board[from.row][from.col];
+  
+  // Move the piece
+  optimisticState.board[to.row][to.col] = piece;
+  optimisticState.board[from.row][from.col] = ".";
+  
+  // Handle promotion
+  if (promotion) {
+    const promotedPiece = playerColor === "white" ? promotion.toUpperCase() : promotion.toLowerCase();
+    optimisticState.board[to.row][to.col] = promotedPiece;
+  }
+  
+  // Toggle turn (optimistic)
+  optimisticState.turn = optimisticState.turn === "white" ? "black" : "white";
+  
+  return optimisticState;
+}
+
+// Revert move if server rejects it
+function revertOptimisticMove(moveId) {
+  if (pendingMoves.has(moveId)) {
+    const moveData = pendingMoves.get(moveId);
+    // Restore the previous state
+    if (moveData.previousState) {
+      gameState = moveData.previousState;
+      renderBoard(gameState);
+      updateStatus(gameState);
+      updateTurnIndicator(gameState);
+    }
+    pendingMoves.delete(moveId);
+  }
+}
+
 /* -------------------------
    CHAT FUNCTIONS
    ------------------------- */
@@ -1216,7 +1276,6 @@ function appendChat(data, isLocal){
   box.scrollTop = box.scrollHeight;
 }
 
-/* typing indicator */
 let typingTimeout = null;
 let isTyping = false;
 
@@ -1261,7 +1320,6 @@ function hideEmojiPanel(){
   if(panel) panel.style.display = "none";
 }
 
-/* Initialize emoji panel events */
 function initializeEmojiPanel() {
   const emojiToggle = document.getElementById("emojiToggle");
   const emojiPanel = document.getElementById("emojiPanel");
@@ -1498,6 +1556,9 @@ socket.on("game_update", d=>{
   const prev = gameState;
   gameState = d.state;
 
+  // Clear any pending optimistic moves since server has confirmed
+  pendingMoves.clear();
+
   const SERVER_SYNC_THRESHOLD = 2;
 
   if (gameState.whiteTimeFormatted !== undefined) {
@@ -1559,6 +1620,17 @@ socket.on("chat_message", data => {
 socket.on("possible_moves", d=>{
   possibleMoves = d.moves;
   renderBoard(gameState);
+});
+
+// Handle invalid move from server
+socket.on("invalid_move", data => {
+  console.warn("Server rejected move:", data);
+  // Revert the optimistic update
+  if (data.moveId) {
+    revertOptimisticMove(data.moveId);
+  }
+  const messages = document.getElementById("messages");
+  if (messages) messages.textContent = "❌ Invalid move!";
 });
 
 /* -------------------------
@@ -1759,20 +1831,51 @@ function handleSquareClick(row, col, state){
 }
 
 /* -------------------------
-   MAKE MOVE
+   MAKE MOVE (OPTIMISTIC UPDATE)
    ------------------------- */
-function makeMove(from,to,promotion=null){
-  socket.emit("move",{
-    room:currentRoom,
-    from,to,
-    promotion
+function makeMove(from, to, promotion=null){
+  // Generate unique move ID
+  const moveId = ++moveSequence;
+  
+  // Store current state for potential rollback
+  const previousState = JSON.parse(JSON.stringify(gameState));
+  
+  // Apply optimistic update IMMEDIATELY
+  const optimisticState = applyOptimisticMove(from, to, promotion);
+  if (optimisticState) {
+    // Update UI instantly
+    gameState = optimisticState;
+    renderBoard(gameState, { from, to });
+    updateTurnIndicator(gameState);
+    
+    // Play sound immediately
+    const wasCapture = previousState.board[to.row][to.col] !== ".";
+    playSound(wasCapture ? "capture" : "move");
+    
+    // Track this pending move
+    pendingMoves.set(moveId, {
+      from,
+      to,
+      promotion,
+      previousState,
+      timestamp: Date.now()
+    });
+  }
+  
+  // Send to server (in background)
+  socket.emit("move", {
+    room: currentRoom,
+    from,
+    to,
+    promotion,
+    moveId // Include moveId for tracking
   });
 
-  selectedSquare=null;
-  possibleMoves=[];
-  pendingPromotion=null;
+  selectedSquare = null;
+  possibleMoves = [];
+  pendingPromotion = null;
   const messages = document.getElementById("messages");
-  if (messages) messages.textContent="";
+  if (messages) messages.textContent = "";
 }
 
 /* -------------------------
@@ -1944,6 +2047,7 @@ function resetGame(){
   socket.emit("reset_game",{room:currentRoom});
   moveHistory=[];
   renderMoveHistory();
+  pendingMoves.clear();
 }
 
 function resignGame(){
