@@ -1,6 +1,17 @@
+# Simple Requirements with Database Support
+
+# Core Dependencies
 Flask==3.0.0
-Flask-SocketIO==5.3.6
-python-socketio==5.11.1
-python-engineio==4.8.2
+Flask-SocketIO==5.3.5
+python-socketio==5.10.0
+python-engineio==4.8.0
+
+# Database (PostgreSQL with psycopg2)
+psycopg2-binary==2.9.9
+
+# Chess Engine
+stockfish==3.28.0
+
+# Production Server
 gunicorn==21.2.0
-python-chess==1.999
+eventlet==0.33.3
